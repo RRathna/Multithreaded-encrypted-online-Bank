@@ -90,6 +90,18 @@ def get_transactions(acc_num):
     return jsonify({'transaction':transaction[0]})
 
 #---------------------------------------Create new user-------------------------------------------------------
-@app.route('/todo/api/v1.0/user/')
+@app.route('/todo/api/v1.0/signUp',methods=['POST'])
+def signupuser():
+    first_name = request.form['first_name'];
+    last_name = request.form['last_name'];
+    address = request.form['address'];
+    emailid = request.form['emailid'];
+    password = request.form['password'];
+    phoneno = request.form['phoneno'];
+    dob = request.form['dob'];
+    securityq1 = request.form['securityq1'];
+    securityq2 = request.form['securityq2']
+    return json.dumps({'status':'OK'});
+
 if __name__ == '__main__':
     app.run(debug=True)
