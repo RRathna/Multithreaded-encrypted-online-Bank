@@ -1,7 +1,17 @@
 from flask import Flask
 from flask import Flask, abort
+from flaskext.mysql import MySQL
 from flask import jsonify
+from flask_restful import reqparse
+from werkzeug import generate_password_hash, check_password_hash
+mysql = MySQL()
 app = Flask(__name__)
+
+app.config['MYSQL_DATABASE_USER'] = 'root'
+app.config['MYSQL_DATABASE_DB'] = 'Bank_DB'
+app.config['MYSQL_DATABASE_HOST'] = 'localhost'
+mysql.init_app(app)
+
 
 customers = [
     {
@@ -61,7 +71,15 @@ account_details = [
 #-----------------------------------------------WELCOME!--------------------------------------------------
 @app.route ('/')
 def index():
-        return "Hello World"
+    cursor = mysql.connect().cursor()
+    cursor.execute("select * from customers")
+    data =  cursor.fetchall()
+    if data is None:
+        return "no data\n"
+    else:
+        for row in data:
+            return jsonify({'row':row[1]})
+
 
 #-----------------get data of all customers---------------------------------------------------------------
 @app.route('/todo/api/v1.0/user',methods=['GET'])
@@ -90,18 +108,40 @@ def get_transactions(acc_num):
     return jsonify({'transaction':transaction[0]})
 
 #---------------------------------------Create new user-------------------------------------------------------
-@app.route('/todo/api/v1.0/signUp',methods=['POST'])
-def signupuser():
-    first_name = request.form['first_name'];
-    last_name = request.form['last_name'];
-    address = request.form['address'];
-    emailid = request.form['emailid'];
-    password = request.form['password'];
-    phoneno = request.form['phoneno'];
-    dob = request.form['dob'];
-    securityq1 = request.form['securityq1'];
-    securityq2 = request.form['securityq2']
-    return json.dumps({'status':'OK'});
+@app.route('/api/v1.0/user',methods=['PUT'])
+def create_user():
+    parser = reqparse.RequestParser()
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    parser.add_argument('first_name')
+    parser.add_argument('last_name')
+    parser.add_argument('address')
+    parser.add_argument('emailid')
+    parser.add_argument('password')
+    parser.add_argument('phoneno')
+    parser.add_argument('ssn')
+    parser.add_argument('user_name')
+
+    args = parser.parse_args()
+
+    first_name = args['first_name']
+    last_name = args['last_name']
+    address = args['address']
+    emailid = args['emailid']
+    password = args['password']
+    phoneno = args['phoneno']
+    ssn = args['ssn']
+    user_name = args['user_name']
+    _hashed_password = generate_password_hash(password)
+    cursor.callproc('create_user',(first_name,last_name,address,emailid,_hashed_password,phoneno,ssn,user_name))
+    data = cursor.fetchall()
+
+    if len(data) is 0:
+        conn.commit()
+        return jsonify({'message':'User created successfully !'})
+    else:
+        return jsonify({'error':str(data[0])})
+
 
 if __name__ == '__main__':
     app.run(debug=True)
