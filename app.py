@@ -113,14 +113,14 @@ def create_user():
     parser = reqparse.RequestParser()
     conn = mysql.connect()
     cursor = conn.cursor()
-    parser.add_argument('first_name')
+    parser.add_argument('first_name',required=True)
     parser.add_argument('last_name')
-    parser.add_argument('address')
-    parser.add_argument('emailid')
-    parser.add_argument('password')
-    parser.add_argument('phoneno')
-    parser.add_argument('ssn')
-    parser.add_argument('user_name')
+    parser.add_argument('address',required=True)
+    parser.add_argument('emailid',required=True)
+    parser.add_argument('password',required=True)
+    parser.add_argument('phoneno',required=True)
+    parser.add_argument('ssn',required=True)
+    parser.add_argument('user_name',required=True)
 
     args = parser.parse_args()
 
@@ -142,6 +142,52 @@ def create_user():
     else:
         return jsonify({'error':str(data[0])})
 
+#---------------------------------------Sign in user using user_id and password-------------------------------------------------------
+
+@app.route('/api/v1.0/sign-in',methods = ['OPTIONS'])
+def sign_in():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    parser = reqparse.RequestParser()
+    parser.add_argument('user_name',required = True)
+    parser.add_argument('password',required = True)
+
+    args = parser.parse_args()
+
+    user_name = args['user_name']
+    password = args['password']
+    cursor.execute("select password from customers where user_name = '"+user_name+"' ")
+    data = cursor.fetchone()
+    if data is not None and check_password_hash(data[0],password):
+        return jsonify({'message':'logged in successfully !'})
+    else:
+        return jsonify({'message':'Username or password is wrong'})
+
+#---------------------------------------Create user account-------------------------------------------------------
+
+@app.route('/api/v1.0/create',methods = ['PUT'])
+def create_account():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    parser = reqparse.RequestParser()
+    parser.add_argument('u_id',required = True)
+    parser.add_argument('ac_type',required = True)
+    parser.add_argument('bal',required = True)
+
+    args = parser.parse_args()
+
+    u_id = args['u_id']
+    ac_type = args['ac_type']
+    bal = args['bal']
+
+    cursor.callproc('create_account',(u_id,ac_type,bal))
+    data = cursor.fetchall()
+
+    if len(data) is 0:
+        conn.commit()
+        return jsonify({'message':'Account created successfully !'})
+    else:
+        return jsonify({'error':str(data[0])})
 
 if __name__ == '__main__':
     app.run(debug=True)
