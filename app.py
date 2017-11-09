@@ -3,6 +3,8 @@ from flask import Flask, abort
 from flaskext.mysql import MySQL
 from flask import jsonify
 from flask_restful import reqparse
+from flask import request
+import requests
 from werkzeug import generate_password_hash, check_password_hash
 mysql = MySQL()
 app = Flask(__name__)
@@ -188,6 +190,97 @@ def create_account():
         return jsonify({'message':'Account created successfully !'})
     else:
         return jsonify({'error':str(data[0])})
+
+#---------------------------------------Create Teller-------------------------------------------------------
+
+@app.route('/api/v1.0/teller',methods = ['PUT'])
+def create_teller():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    #r =  requests.post('http://www.localhost:5000/api/v1.0/user',auth=('first_name','last_name','address','emailid','password','phoneno','ssn','user_name'))
+    #return jsonify({'message':r.status_code})
+    parser = reqparse.RequestParser()
+    parser.add_argument('first_name',required=True)
+    parser.add_argument('last_name')
+    parser.add_argument('address',required=True)
+    parser.add_argument('emailid',required=True)
+    parser.add_argument('password',required=True)
+    parser.add_argument('phoneno',required=True)
+    parser.add_argument('ssn',required=True)
+    parser.add_argument('user_name',required=True)
+
+    args = parser.parse_args()
+
+    first_name = args['first_name']
+    last_name = args['last_name']
+    address = args['address']
+    emailid = args['emailid']
+    password = args['password']
+    phoneno = args['phoneno']
+    ss = args['ssn']
+    u_name = args['user_name']
+    _hashed_password = generate_password_hash(password)
+    cursor.callproc('create_user',(first_name,last_name,address,emailid,_hashed_password,phoneno,ss,u_name))
+    data = cursor.fetchall()
+
+    cursor.execute("select id from customers where user_name = '"+ u_name +"' and ssn = '"+ ss +"'")
+    uid = cursor.fetchall()
+    cursor.callproc('create_teller',uid)
+    teller_data = cursor.fetchall()
+
+    if len(teller_data) is 0:
+        conn.commit()
+        return jsonify({'message':'Teller created successfully !'})
+    else:
+        return jsonify({'error':str(data[0])})
+
+#---------------------------------------Info update by customer-------------------------------------------------------
+
+@app.route('/api/v1.0/update-info',methods = ['POST'])
+def update_info():
+    conn = mysql.connect()
+    cursor = conn.cursor()
+    parser = reqparse.RequestParser()
+
+    parser.add_argument('user_name',required=True)
+    parser.add_argument('address')
+    parser.add_argument('emailid')
+    parser.add_argument('password')
+    parser.add_argument('phoneno')
+    args = parser.parse_args()
+    u_name = args['user_name']
+    addr = args['address']
+    email = args['emailid']
+    passw = args['password']
+    phone = args['phoneno']
+    print("value of email is ",email)
+    result = ''
+    if addr is not None:
+        affected_address_rows = cursor.execute("update customers set address = '"+ addr +"' where user_name = '"+ u_name +"'")
+        print("Number of affected rows of address in db is",affected_address_rows)
+        conn.commit()
+        if affected_address_rows == 1:
+            result = 'Address updated successfully'
+    if email is not None:
+        affected_email_rows = cursor.execute("update customers set emailid = '"+ email +"' where user_name = '"+ u_name +"'")
+        print("Number of affected rows for email in db is",affected_email_rows)
+        conn.commit()
+        if affected_email_rows == 1:
+            result = result + '\n' + 'Email updated successfully'
+    if passw is not None:
+        _hashed_password = generate_password_hash(passw)
+        affected_password_rows = cursor.execute("update customers set password = '"+ _hashed_password +"' where user_name = '"+ u_name +"'")
+        print("Number of affected rows for password in db is",affected_password_rows)
+        conn.commit()
+        if affected_password_rows == 1:
+            result = result + '\n' + 'password updated successfully'
+    if phone is not None:
+        affected_phoneno_rows = cursor.execute("update customers set phoneno = '"+ phone +"' where user_name = '"+ u_name +"'")
+        print("Number of affected rows for email in db is",affected_phoneno_rows)
+        conn.commit()
+        if affected_phoneno_rows == 1:
+            result = result + '\n' + 'phone number updated successfully'
+    return jsonify({'message':result})
 
 if __name__ == '__main__':
     app.run(debug=True)

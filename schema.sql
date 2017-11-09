@@ -114,3 +114,24 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `create_account`(
       end if;
   END$$
   DELIMITER ;
+
+DELIMITER $$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `create_teller`(
+    IN u_id int)
+     BEGIN
+      if not exists(select * from roles where (user_id = u_id and role = 'teller')) THEN
+        insert into roles
+          (
+            user_id,
+            role
+          )
+        values
+          (
+            u_id,
+            'teller'
+          );
+      else
+        select 'Teller with this ID already exists';
+      end if;
+    END$$
+    DELIMITER ;
