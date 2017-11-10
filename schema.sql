@@ -29,6 +29,7 @@ create table transactions(trans_id int not null primary key,
   amount int not null,
   trans_party_acc int not null,
   trans_date date not null,
+  transaction_Approval varchar(20) not null,
   foreign key (acc_id) references account_details(acc_id));
 
 drop table if exists roles;
@@ -135,3 +136,24 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `create_teller`(
       end if;
     END$$
     DELIMITER ;
+
+    DELIMITER $$
+    CREATE DEFINER=`root`@`localhost` PROCEDURE `create_admin`(
+        IN u_id int)
+         BEGIN
+          if not exists(select * from roles where (user_id = u_id and role = 'admin')) THEN
+            insert into roles
+              (
+                user_id,
+                role
+              )
+            values
+              (
+                u_id,
+                'admin'
+              );
+          else
+            select 'Admin with this ID already exists';
+          end if;
+        END$$
+        DELIMITER ;
