@@ -47,6 +47,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `create_user`(
   IN emailid Varchar(40),
   IN password varchar(100),
   IN phoneno varchar(20),
+  IN ss varchar(10),
   IN u_name varchar(20)
 )
 /*select 'I am in stored procedure';*/
@@ -61,6 +62,7 @@ BEGIN
             emailid,
             password,
             phoneno,
+            ssn,
             user_name
         )
         values
@@ -71,6 +73,7 @@ BEGIN
           emailid,
           password,
           phoneno,
+          ss,
           u_name
         );
     ELSE
